@@ -48,10 +48,10 @@ public class Client extends Thread{
 				GameInfo gameInfoTemp = (GameInfo) in.readObject();
 				if(gameInfoTemp.message != null) {	//client received message
 					String m = gameInfoTemp.message;
-					callback.accept(m);
+					callback.accept(gameInfoTemp);
 					System.out.println("Client received message: " + m);
 				}
-				else if(gameInfoTemp.letter != '\u0000' && gameInfoTemp.positions != null) {
+				else if(gameInfoTemp.letter != '\u0000' && gameInfoTemp.positions.size() != 0) {
 					System.out.println("Client guessed correct");
 					callbackGameInfo(gameInfoTemp);
 				}
@@ -61,6 +61,7 @@ public class Client extends Thread{
 			}
 			catch(Exception e) {
 				System.out.println("Server closed");
+				e.printStackTrace(); 
 				break;
 			}
 		}

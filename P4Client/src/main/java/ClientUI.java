@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+import java.util.EventObject;
 import java.util.HashMap;
 
 import javafx.application.Platform;
@@ -8,6 +10,7 @@ import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -24,14 +27,16 @@ import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
 public class ClientUI {
-	//////////////////
+	
 	private HashMap<String, Scene> sceneMap;
 	private ListView<String> listItems;
 	private HBox letters;
+	private ArrayList<Button> buttons;
 	private Stage primaryStage;
 	private Client clientConnection;
 	private static int MaxLetters = 12;
-	private int playerID;
+	private int playerID, startPosition;
+	private GameInfo roundGameInfo = new GameInfo();	//use to keep track every round guess
 
 	public ClientUI(HashMap<String, Scene> sceneMap, Stage primaryStage) {
 		this.sceneMap = sceneMap;
@@ -72,9 +77,10 @@ public class ClientUI {
 			try {
 				clientConnection = new Client(ipTextField.getText(), Integer.parseInt(portTextField.getText()), data->{
 					Platform.runLater(()->{
-						String s = data.toString();
+						roundGameInfo = (GameInfo) data;
+						String s = roundGameInfo.message;
 						listItems.getItems().add(s);
-						parseCallback(s);
+						parseCallback(roundGameInfo);
 					});
 				});
 				clientConnection.start();
@@ -130,16 +136,20 @@ public class ClientUI {
 		//------Declare
 		//Maximum word letter is 12
 		letters = new HBox(20);
+		buttons = new ArrayList<Button>();
 		for (int i = 0; i < MaxLetters; i++) {
 			Button btn = new Button("_");
 			btn.setVisible(false);
 			letters.getChildren().add(btn);
+			buttons.add(btn);
 		}
 		Button sendBtn = new Button("Send");
 		TextField textField = new TextField();
 		VBox vbox = new VBox(10, textField, sendBtn);
-		vbox.setAlignment(Pos.BASELINE_RIGHT);
-		HBox buttomLayout = new HBox(100, listItems, vbox);
+		vbox.setAlignment(Pos.CENTER_RIGHT);
+		Text gameInfo = new Text("Game Info: ");
+		VBox vbox2 = new VBox(10, gameInfo, listItems);
+		HBox buttomLayout = new HBox(100, vbox2, vbox);
 		ImageView backgroundImageView = new ImageView("background.jpeg");
 		backgroundImageView.setPreserveRatio(true);
 		backgroundImageView.setFitWidth(1000);
@@ -150,11 +160,15 @@ public class ClientUI {
 		letters.setLayoutX(20);
 		letters.setLayoutY(20);
 		listItems.setPrefHeight(200);
-		buttomLayout.setLayoutX(20);
+		listItems.setPrefWidth(280);
+		buttomLayout.setLayoutX(190);
 		buttomLayout.setLayoutY(200);
 		group.getChildren().addAll(backgroundImageView, letters, buttomLayout);
 		
 		//------Method
+		gameInfo.setStyle("-fx-font-size: 32px;" + 
+				"-fx-font-family: \"times\";" + 
+				"-fx-fill: black;");
 		//set textfield can only take one char
 		textField.setTextFormatter(new TextFormatter<String>((Change change) -> {
 		    String newText = change.getControlNewText();
@@ -167,7 +181,7 @@ public class ClientUI {
 		sendBtn.getStylesheets().add
  			(ClientUI.class.getResource("sendBtn.css").toExternalForm());
 		sendBtn.setOnAction(e->{
-			clientConnection.send(playerID, textField.getText().charAt(0));
+			clientConnection.send(playerID, Character.toLowerCase(textField.getText().charAt(0)));
 			textField.clear();
 		});
 		letters.setMouseTransparent(true);
@@ -178,15 +192,17 @@ public class ClientUI {
 	}
 	
 	//After player win or lose, let then choose restart or quit
-	private Scene createScene4() {
+	private Scene createScene4(boolean result) {
+		
 		Button restart = new Button("Restart");
 		Button quit = new Button("Quit");
 		HBox layout = new HBox(20, restart, quit);
 		layout.setAlignment(Pos.CENTER);
 		
 		//------Methods
+		sceneMap.remove("ClientScene4");	//remove this scene from scene map, because every time generating this scene won't cause hashmap collision
 		restart.setOnAction(e->{
-			//reset number of guesses and total number of categories win
+			//TODO: reset number of guesses and total number of categories win
 			primaryStage.setScene(sceneMap.get("ClientScene2"));
 		});
 		quit.setOnAction(e->{
@@ -201,8 +217,9 @@ public class ClientUI {
 		return new Scene(layout, 600, 600);
 	}
 
-	private void parseCallback(String s) {
-		if (s.contains("You are player ")){
+	private void parseCallback(GameInfo gameInfo) {
+		String s = gameInfo.message;
+		if (s.contains("You are player")){
 			playerID = Integer.valueOf(s.substring(s.length() - 1, s.length()));
 			System.out.println("This client is player " + playerID);
 		}
@@ -210,15 +227,47 @@ public class ClientUI {
 			int length = Integer.parseInt(s.substring(s.length() - 1, s.length()));
 			updateLetters(length);
 		}
-		else if (s.contains("correctly guessed")) {
-			
+		else if(gameInfo.message.contains("correctly guessed") && gameInfo.positions.size() != 0) {
+			updateLetters(gameInfo.letter, gameInfo.positions);
 		}
+	}
+	
+	private void updateLetters(char letter, ArrayList<Integer> positions) {
+		for(int i : positions) {
+			buttons.get(i + startPosition).setText(String.valueOf(letter));
+		}
+		//after update matching letters on UI, check if word complete next
+		checkWordComplete();
+	}
+
+	private boolean checkWordComplete() {
+		for (Node n : letters.getChildren()) {
+			//convert Node to Button
+			if (n instanceof Button) {
+		        final Button button = (Button) n;
+		        if(((Button) n).getText().compareTo("_") == 0) {
+		        	return false;
+		        }
+		    }
+		}
+		categoryWin();
+		return true;
+	}
+
+	private void categoryWin() {
+		sceneMap.put("ClientScene4",createScene4(true));
+		primaryStage.setScene(sceneMap.get("ClientScene4"));
 		
 	}
 	
+	private void categoryLose() {
+		sceneMap.put("ClientScene4",createScene4(false));
+		primaryStage.setScene(sceneMap.get("ClientScene4"));
+	}
+
 	private void updateLetters(int length) {
 		int mid = MaxLetters/2;
-		int startPosition = mid - (length/2);
+		startPosition = mid - (length/2);
 		int endPosition = mid + (length - (length/2));
 		for(int i = startPosition; i < endPosition; i++) {
 			letters.getChildren().get(i).setVisible(true);
