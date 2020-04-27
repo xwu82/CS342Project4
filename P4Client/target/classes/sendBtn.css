@@ -1,0 +1,12 @@
+.button {
+	-fx-font: 3em "Verdana";
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-color: linear-gradient(#FFD28C, #B66F00);
+    -fx-effect: dropshadow( three-pass-box , rgba(0, 0, 0, 0.6) , 5, 0.0, 0 , 1 );
+	-fx-border-color: #A899A9;
+}
+
+.button:hover {
+    -fx-background-color: linear-gradient(#B66F00, #FFD28C);
+}
