@@ -24,7 +24,7 @@ import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
 public class ClientUI {
-	
+	//////////////////
 	private HashMap<String, Scene> sceneMap;
 	private ListView<String> listItems;
 	private HBox letters;
