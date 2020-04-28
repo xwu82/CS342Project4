@@ -181,8 +181,10 @@ public class ClientUI {
 		sendBtn.getStylesheets().add
  			(ClientUI.class.getResource("sendBtn.css").toExternalForm());
 		sendBtn.setOnAction(e->{
-			clientConnection.send(playerID, Character.toLowerCase(textField.getText().charAt(0)));
-			textField.clear();
+			if(!textField.getText().trim().isEmpty()) {
+				clientConnection.send(playerID, Character.toLowerCase(textField.getText().charAt(0)));
+				textField.clear();
+			}
 		});
 		letters.setMouseTransparent(true);
 		letters.getStylesheets().add
