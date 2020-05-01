@@ -57,6 +57,7 @@ public class ServerUI {
 				serverConnection = new Server(Integer.parseInt(portTextField.getText()), data -> {
 					Platform.runLater(()->{
 						listItems.getItems().add(data.toString());
+						listItems.scrollTo(listItems.getItems().size());
 					});
 				});
 				System.out.println("server port: " + portTextField.getText());

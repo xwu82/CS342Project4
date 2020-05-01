@@ -9,6 +9,12 @@ import java.util.function.Consumer;
 
 public class Server {
 	
+	class MyPair
+	{
+	    public ClientThread client; 
+	    public String answer;
+	};
+	
 	private ArrayList<String> foods = new ArrayList<String>() { 
         { 
             add("hamburger"); 
@@ -171,7 +177,7 @@ public class Server {
 			    	// 		game, should only close socket, but may cause storage 
 			    	//		overload, since clients always increasing
 			    	//clients.remove(this);
-			    	e.printStackTrace(); 
+			    	// e.printStackTrace(); 
 			    	break;
 			    }
 			}//end of while
