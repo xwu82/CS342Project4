@@ -32,10 +32,12 @@ public class ClientUI {
 	private ListView<String> listItems;
 	private HBox letters;
 	private ArrayList<Button> buttons;
+	private TextField letterUsedField;
 	private Stage primaryStage;
 	private Client clientConnection;
 	private static int MaxLetters = 12;
 	private int playerID, startPosition;
+	private String letterUsedStr = " ";
 	private GameInfo roundGameInfo = new GameInfo();	//use to keep track every round guess
 
 	public ClientUI(HashMap<String, Scene> sceneMap, Stage primaryStage) {
@@ -80,6 +82,7 @@ public class ClientUI {
 						roundGameInfo = (GameInfo) data;
 						String s = roundGameInfo.message;
 						listItems.getItems().add(s);
+					    listItems.scrollTo(listItems.getItems().size());
 						parseCallback(roundGameInfo);
 					});
 				});
@@ -145,12 +148,19 @@ public class ClientUI {
 		}
 		Button sendBtn = new Button("Send");
 		TextField textField = new TextField();
-		VBox vbox = new VBox(10, textField, sendBtn);
-		vbox.setAlignment(Pos.CENTER_RIGHT);
+		VBox sendVbox = new VBox(10, textField, sendBtn);
+		sendVbox.setAlignment(Pos.CENTER_RIGHT);
 		Text gameInfo = new Text("Game Info: ");
-		VBox vbox2 = new VBox(10, gameInfo, listItems);
-		HBox buttomLayout = new HBox(100, vbox2, vbox);
-		ImageView backgroundImageView = new ImageView("background.jpeg");
+		gameInfo.setId("title");
+		VBox gameInfoVbox = new VBox(10, gameInfo, listItems);
+		HBox buttomLayout = new HBox(100, gameInfoVbox, sendVbox);
+		Text letterUsedText = new Text("Letter Used:");
+		letterUsedText.setId("title");
+		letterUsedField = new TextField();
+		letterUsedField.setEditable(false);
+		letterUsedField.setDisable(false);
+		VBox layout = new VBox(20, buttomLayout, letterUsedText, letterUsedField);
+		ImageView backgroundImageView = new ImageView("/images/background.jpeg");
 		backgroundImageView.setPreserveRatio(true);
 		backgroundImageView.setFitWidth(1000);
 		Group group = new Group();
@@ -159,16 +169,16 @@ public class ClientUI {
 		//------Layout
 		letters.setLayoutX(20);
 		letters.setLayoutY(20);
-		listItems.setPrefHeight(200);
+		listItems.setPrefHeight(150);
 		listItems.setPrefWidth(280);
-		buttomLayout.setLayoutX(190);
-		buttomLayout.setLayoutY(200);
-		group.getChildren().addAll(backgroundImageView, letters, buttomLayout);
+		layout.setLayoutX(190);
+		layout.setLayoutY(150);
+		group.getChildren().addAll(backgroundImageView, letters, layout);
 		
 		//------Method
-		gameInfo.setStyle("-fx-font-size: 32px;" + 
-				"-fx-font-family: \"times\";" + 
-				"-fx-fill: black;");
+		gameInfoVbox.getStylesheets().add("/styles/text.css");
+		layout.getStylesheets().add("/styles/text.css");
+		sendBtn.getStylesheets().add("/styles/sendBtn.css");
 		//set textfield can only take one char
 		textField.setTextFormatter(new TextFormatter<String>((Change change) -> {
 		    String newText = change.getControlNewText();
@@ -178,17 +188,18 @@ public class ClientUI {
 		        return change ;
 		    }
 		}));
-		sendBtn.getStylesheets().add
- 			(ClientUI.class.getResource("sendBtn.css").toExternalForm());
 		sendBtn.setOnAction(e->{
 			if(!textField.getText().trim().isEmpty()) {
-				clientConnection.send(playerID, Character.toLowerCase(textField.getText().charAt(0)));
+				char letter = textField.getText().charAt(0);
+				clientConnection.send(playerID, Character.toLowerCase(letter));
+				//update letter used field
+				letterUsedStr += letter + " ";
+				letterUsedField.setText(letterUsedStr);
 				textField.clear();
 			}
 		});
 		letters.setMouseTransparent(true);
-		letters.getStylesheets().add
-	 		(ClientUI.class.getResource("letters.css").toExternalForm());
+		letters.getStylesheets().add("/styles/letters.css");
 		
 		return scene;
 	}
@@ -229,8 +240,11 @@ public class ClientUI {
 			int length = Integer.parseInt(s.substring(s.length() - 1, s.length()));
 			updateLetters(length);
 		}
-		else if(gameInfo.message.contains("correctly guessed") && gameInfo.positions.size() != 0) {
-			updateLetters(gameInfo.letter, gameInfo.positions);
+		else if(gameInfo.message.contains("correctly guessed") || gameInfo.message.contains("Better luck")) {
+			//update on guess word field
+			if(gameInfo.positions.size() != 0) {
+				updateLetters(gameInfo.letter, gameInfo.positions);
+			}
 		}
 	}
 	
@@ -259,7 +273,6 @@ public class ClientUI {
 	private void categoryWin() {
 		sceneMap.put("ClientScene4",createScene4(true));
 		primaryStage.setScene(sceneMap.get("ClientScene4"));
-		
 	}
 	
 	private void categoryLose() {

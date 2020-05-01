@@ -61,7 +61,7 @@ public class Client extends Thread{
 			}
 			catch(Exception e) {
 				System.out.println("Server closed");
-				e.printStackTrace(); 
+				// e.printStackTrace(); 
 				break;
 			}
 		}

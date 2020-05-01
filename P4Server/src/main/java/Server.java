@@ -14,8 +14,8 @@ public class Server {
             add("hamburger"); 
             add("chips"); 
             add("pizza");
-            //add("french fries");	//TODO:
-            //add("coca-cola");	//TODO:
+            //add("french fries");	//TODO: word with space
+            //add("coca-cola");	//TODO: word with non-alphabet char
         } 
     };
 	
@@ -128,10 +128,10 @@ public class Server {
 		char letter = gameInfo.letter;
 		//correct guess
 		if(answers.get(playerID - 1).indexOf(letter) != -1)
-			sendResultToClient(playerID, "You have correctly guessed: " + letter, gameInfo, true);
+			sendResultToClient(playerID, "You have correctly guessed: " + letter, gameInfo);
 		//wrong guess
 		else {
-			sendResultToClient(playerID, "Better luck next time: " + letter, gameInfo, false);
+			sendResultToClient(playerID, "Better luck next time: " + letter, gameInfo);
 		}
 	}
 	
@@ -148,9 +148,7 @@ public class Server {
 	}
 	
 	//send String 
-	public void sendResultToClient(int clientID, String msg, GameInfo gameInfo, boolean correctness) {
-//		System.out.println("clientID: " + playerID + ", " + word);
-//		System.out.println("answers size: " + answers.size());
+	public void sendResultToClient(int clientID, String msg, GameInfo gameInfo) {
 		ClientThread t = clients.get(clientID - 1);
 		GameInfo newgameInfo = new GameInfo();
 		newgameInfo.playerID = gameInfo.playerID;
@@ -172,6 +170,7 @@ public class Server {
 		}
 	}
 	
+	//debug feature
 	private void displayeReceived(GameInfo gi) {
 		System.out.println("Player ID: " + gi.playerID);
 		System.out.println("Player message: " + gi.message);
