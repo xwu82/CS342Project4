@@ -7,4 +7,7 @@ public class GameInfo implements Serializable {
 	String message;
 	char letter;
 	ArrayList<Integer> positions;	//multiple matches in String, such "letter"
+	
+	int chance;  // how many times you can get wrong, up to 6
+		
 }

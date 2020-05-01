@@ -14,9 +14,25 @@ public class Server {
             add("hamburger"); 
             add("chips"); 
             add("pizza");
-            //add("french fries");	//TODO: word with space
-            //add("coca-cola");	//TODO: word with non-alphabet char
+            //add("french fries");	//TODO:
+            //add("coca-cola");	//TODO:
         } 
+    };
+    
+    private ArrayList<String>  animals = new ArrayList<String>() {
+    	{
+    		add("kangaroo");
+    		add("trilobita");
+    		add("squirrel");
+    	}
+    };
+    
+    private ArrayList<String> states = new ArrayList<String>() {
+    	{
+    		add("oklahoma");
+    		add("illinois");
+    		add("nevada");
+    	}
     };
 	
 	int port;
@@ -65,10 +81,22 @@ public class Server {
 		int count;
 		ObjectInputStream in;
 		ObjectOutputStream out;
+		boolean foodpass;
+		boolean animalpass;
+		boolean statespass;
+		int foodfail;
+		int animalfail;
+		int statesfail;
 		
 		ClientThread(Socket s, int count){
 			this.connection = s;
 			this.count = count;	
+			foodpass = false;
+			animalpass = false;
+			statespass = false;
+			foodfail = 0;
+			animalfail = 0;
+			statesfail = 0;
 		}
 		
 		public void run(){
@@ -95,9 +123,36 @@ public class Server {
 							int playerID = gameInfoTemp.playerID;
 							Random rand = new Random(); 
 					        String word = foods.get(rand.nextInt(foods.size())); 
+					        System.out.println("test: " + gameInfoTemp.chance);
 							callback.accept("Player" + gameInfoTemp.playerID + " choose category: " + gameInfoTemp.message
 									+ "; Word is " + word);
+							callback.accept("Player" + gameInfoTemp.playerID + " have " + gameInfoTemp.chance  + " chance.");
 							sendMsgToClient(playerID, "Your word length is " + word.length());
+							sendMsgToClient(playerID, "You have " + gameInfoTemp.chance  + " chance");
+							answers.set(playerID - 1, word);
+						}
+						
+						else if (gameInfoTemp.message.compareTo("Animals") == 0) {
+							int playerID = gameInfoTemp.playerID;
+							Random rand = new Random();
+							String word = animals.get(rand.nextInt(animals.size()));
+							callback.accept("Player" + gameInfoTemp.playerID + " choose category: " + gameInfoTemp.message
+									+ "; Word is " + word);
+							callback.accept("Player" + gameInfoTemp.playerID + " have " +  gameInfoTemp.chance  + " chance.");
+							sendMsgToClient(playerID, "Your word length is " + word.length());
+							sendMsgToClient(playerID, "You have " + gameInfoTemp.chance  + " chance");
+							answers.set(playerID - 1, word);
+						}
+						
+						else if (gameInfoTemp.message.compareTo("U.S. States") == 0) {
+							int playerID = gameInfoTemp.playerID;
+							Random rand = new Random();
+							String word = states.get(rand.nextInt(states.size()));
+							callback.accept("Player" + gameInfoTemp.playerID + " choose category: " + gameInfoTemp.message
+									+ "; Word is " + word);
+							callback.accept("Player" + gameInfoTemp.playerID + " have " +  gameInfoTemp.chance  + " chance.");
+							sendMsgToClient(playerID, "Your word length is " + word.length());
+							sendMsgToClient(playerID, "You have " + gameInfoTemp.chance  + " chance");
 							answers.set(playerID - 1, word);
 						}
 					}
@@ -127,11 +182,20 @@ public class Server {
 		int playerID = gameInfo.playerID;
 		char letter = gameInfo.letter;
 		//correct guess
-		if(answers.get(playerID - 1).indexOf(letter) != -1)
-			sendResultToClient(playerID, "You have correctly guessed: " + letter, gameInfo);
+		if(answers.get(playerID - 1).indexOf(letter) != -1) {
+			sendResultToClient(playerID, "You have correctly guessed: " + letter, gameInfo, true);
+			callback.accept("right guess");
+		}
 		//wrong guess
 		else {
-			sendResultToClient(playerID, "Better luck next time: " + letter, gameInfo);
+			if ((gameInfo.chance - 1) > 0) {
+				sendResultToClient(playerID, "Better luck next time: " + letter + " \nYou only have " + (gameInfo.chance -1) + " chance.", gameInfo, false);
+				callback.accept("wrong guess: only have " + (gameInfo.chance -1) + " chance.");
+			}
+			else if ((gameInfo.chance - 1) == 0) {
+				sendResultToClient(playerID, "Better luck next time: " + letter + " \nYou have no chance, Game Over", gameInfo, false);
+				callback.accept("Player" + playerID + " lost game.");
+			}
 		}
 	}
 	
@@ -148,7 +212,9 @@ public class Server {
 	}
 	
 	//send String 
-	public void sendResultToClient(int clientID, String msg, GameInfo gameInfo) {
+	public void sendResultToClient(int clientID, String msg, GameInfo gameInfo, boolean correctness) {
+//		System.out.println("clientID: " + playerID + ", " + word);
+//		System.out.println("answers size: " + answers.size());
 		ClientThread t = clients.get(clientID - 1);
 		GameInfo newgameInfo = new GameInfo();
 		newgameInfo.playerID = gameInfo.playerID;
@@ -161,6 +227,14 @@ public class Server {
 		     newgameInfo.positions.add(i);
 		     i = answers.get(gameInfo.playerID - 1).indexOf(gameInfo.letter, i + 1);
 		}
+		//update chance
+		if (correctness == true) {
+			newgameInfo.chance = gameInfo.chance;
+		}
+		else if (correctness == false) {
+			newgameInfo.chance = gameInfo.chance - 1;
+		}
+		
 		//send to client
 		try {
 			t.out.writeObject(newgameInfo);
@@ -170,7 +244,6 @@ public class Server {
 		}
 	}
 	
-	//debug feature
 	private void displayeReceived(GameInfo gi) {
 		System.out.println("Player ID: " + gi.playerID);
 		System.out.println("Player message: " + gi.message);

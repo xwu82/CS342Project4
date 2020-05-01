@@ -48,6 +48,9 @@ public class Client extends Thread{
 				GameInfo gameInfoTemp = (GameInfo) in.readObject();
 				if(gameInfoTemp.message != null) {	//client received message
 					String m = gameInfoTemp.message;
+					if (gameInfoTemp.chance == 0) {
+						
+					}
 					callback.accept(gameInfoTemp);
 					System.out.println("Client received message: " + m);
 				}
@@ -61,7 +64,7 @@ public class Client extends Thread{
 			}
 			catch(Exception e) {
 				System.out.println("Server closed");
-				// e.printStackTrace(); 
+				e.printStackTrace(); 
 				break;
 			}
 		}
@@ -69,9 +72,10 @@ public class Client extends Thread{
     }
 	
 	//send char/letter to server
-	public void send(int playerID, char letter) {
+	public void send(int playerID, int Hchance, char letter) {
 		GameInfo newGameInfo = new GameInfo();
 		newGameInfo.playerID = playerID;
+		newGameInfo.chance = Hchance;
 		newGameInfo.letter = letter;
 		try {
 			out.writeObject(newGameInfo);
@@ -81,9 +85,10 @@ public class Client extends Thread{
 	}
 	
 	//send String/message to server
-	public void send(int playerID, String s) {
+	public void send(int playerID, int Hchance, String s) {
 		GameInfo gameInfo = new GameInfo();
 		gameInfo.playerID = playerID;
+		gameInfo.chance = Hchance;
 		gameInfo.message = s;
 		try {
 			out.writeObject(gameInfo);
